@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff5d8">
+  <title>Get BEE! — A Honeycomb Hop</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #342516;
+      --muted: #806b4e;
+      --honey: #ffbf3f;
+      --cream: #fff8e8;
+      --green: #6b9b57;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse at 15% 15%, #fffdf6 0, transparent 38%),
+        radial-gradient(ellipse at 90% 85%, #ffe6a5 0, transparent 34%),
+        #fff3d4;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    }
+
+    .game-shell {
+      width: min(100%, 790px);
+      padding: 22px;
+      border: 1px solid #e8d4a7;
+      border-radius: 26px;
+      background: rgba(255, 251, 239, .94);
+      box-shadow: 0 18px 55px #67451920, 0 3px 0 #e7d4aa;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 0 2px 14px;
+    }
+
+    .eyebrow {
+      margin: 0 0 3px;
+      color: #a76e13;
+      font-size: .72rem;
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 5vw, 2.45rem);
+      line-height: 1;
+      letter-spacing: -.06em;
+    }
+
+    h1 span { color: #eea914; }
+
+    .stats {
+      display: flex;
+      gap: 9px;
+    }
+
+    .stat {
+      min-width: 76px;
+      padding: 8px 12px;
+      border: 1px solid #f0dfb8;
+      border-radius: 14px;
+      background: #fffdf8;
+      text-align: center;
+    }
+
+    .stat small {
+      display: block;
+      color: var(--muted);
+      font-size: .62rem;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .stat strong { font-size: 1.05rem; }
+
+    .board-wrap {
+      position: relative;
+      overflow: hidden;
+      border: 4px solid #5b4426;
+      border-radius: 18px;
+      background: #98c97b;
+      box-shadow: inset 0 0 0 2px #ffffff80;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 720 / 560;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: #372510a8;
+      text-align: center;
+      transition: opacity .18s ease;
+    }
+
+    .overlay[hidden] { display: none; }
+
+    .card {
+      width: min(100%, 380px);
+      padding: 25px 24px 22px;
+      border: 2px solid #fff3d3;
+      border-radius: 22px;
+      background: #fff9e9;
+      box-shadow: 0 10px 0 #b47b25;
+    }
+
+    .card .bee-mark { font-size: 2.8rem; }
+    .card h2 { margin: 6px 0; font-size: 1.75rem; }
+    .card p { margin: 8px 0 17px; color: #705b3d; line-height: 1.45; }
+
+    button {
+      padding: 12px 22px;
+      border: 0;
+      border-radius: 999px;
+      color: #39250b;
+      background: var(--honey);
+      box-shadow: 0 4px 0 #d89211;
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    button:hover { background: #ffd166; transform: translateY(-1px); }
+    button:active { transform: translateY(2px); box-shadow: 0 2px 0 #d89211; }
+    button:focus-visible { outline: 3px solid #5b4426; outline-offset: 4px; }
+
+    .below {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 13px 4px 0;
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.4;
+    }
+
+    .below strong { color: #523a1d; }
+
+    .touch-controls {
+      display: none;
+      grid-template-columns: repeat(3, 48px);
+      grid-template-rows: repeat(2, 42px);
+      justify-content: center;
+      gap: 5px;
+      margin-top: 12px;
+    }
+
+    .touch-controls button {
+      padding: 5px;
+      border-radius: 12px;
+      font-size: 1.15rem;
+      touch-action: manipulation;
+    }
+    .touch-controls [data-move="up"] { grid-column: 2; grid-row: 1; }
+    .touch-controls [data-move="left"] { grid-column: 1; grid-row: 2; }
+    .touch-controls [data-move="down"] { grid-column: 2; grid-row: 2; }
+    .touch-controls [data-move="right"] { grid-column: 3; grid-row: 2; }
+
+    @media (max-width: 540px) {
+      body { padding: 12px; }
+      .game-shell { padding: 13px; border-radius: 20px; }
+      header { align-items: flex-start; }
+      .stats { gap: 5px; }
+      .stat { min-width: 57px; padding: 6px 7px; }
+      .stat small { font-size: .54rem; }
+      .below { font-size: .74rem; }
+      .touch-controls { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game-shell">
+    <header>
+      <div>
+        <p class="eyebrow">A honeycomb hop</p>
+        <h1>Get <span>BEE!</span></h1>
+      </div>
+      <div class="stats" aria-label="Game stats">
+        <div class="stat"><small>Honey</small><strong id="score">0</strong></div>
+        <div class="stat"><small>Lives</small><strong id="lives">3</strong></div>
+        <div class="stat"><small>Level</small><strong id="level">1</strong></div>
+      </div>
+    </header>
+
+    <section class="board-wrap" aria-label="Game board">
+      <canvas id="game" width="720" height="560" aria-label="Help a drone bee cross the garden to reach the queen bee"></canvas>
+      <div class="overlay" id="overlay">
+        <div class="card">
+          <div class="bee-mark" aria-hidden="true">🐝</div>
+          <h2 id="overlay-title">Queen bee awaits!</h2>
+          <p id="overlay-copy">Guide your drone across the garden, dodge the busy bees, and hop the honey streams to reach the queen.</p>
+          <button id="start-button" type="button">Start buzzing</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="below">
+      <span><strong>Move:</strong> arrow keys or WASD</span>
+      <span><strong>Goal:</strong> reach the queen; don't get squished!</span>
+    </div>
+    <div class="touch-controls" aria-label="Touch controls">
+      <button type="button" data-move="up" aria-label="Move up">↑</button>
+      <button type="button" data-move="left" aria-label="Move left">←</button>
+      <button type="button" data-move="down" aria-label="Move down">↓</button>
+      <button type="button" data-move="right" aria-label="Move right">→</button>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      const scoreDisplay = document.getElementById("score");
+      const livesDisplay = document.getElementById("lives");
+      const levelDisplay = document.getElementById("level");
+      const overlay = document.getElementById("overlay");
+      const overlayTitle = document.getElementById("overlay-title");
+      const overlayCopy = document.getElementById("overlay-copy");
+      const startButton = document.getElementById("start-button");
+
+      const W = canvas.width;
+      const H = canvas.height;
+      const tile = 56;
+      const player = { col: 6, row: 9, radius: 17, facingX: 0, facingY: -1 };
+      const start = { col: 6, row: 9 };
+      const laneRows = [1, 2, 3, 5, 6, 7];
+      let obstacles = [];
+      let adversary = null;
+      let adversarySpawnTimer = 2200;
+      let nextAdversaryIndex = 0;
+      let score = 0;
+      let lives = 3;
+      let level = 1;
+      let running = false;
+      let lastTime = 0;
+      let animationFrame = 0;
+      let messageTimer = 0;
+      const rivalAudio = new Audio("sprock.m4a");
+      rivalAudio.preload = "auto";
+      rivalAudio.loop = true;
+      const beardBeeSprite = new Image();
+      beardBeeSprite.src = "beard-bee.png";
+      beardBeeSprite.addEventListener("error", () => console.error("Could not load beard-bee.png."));
+      rivalAudio.addEventListener("error", () => console.error("Could not load sprock.m4a.", rivalAudio.error));
+
+      const flowers = [
+        [32, 113, "#f5a1b5"], [676, 141, "#e68ac1"], [25, 253, "#fff1a4"],
+        [695, 363, "#f3a5b0"], [43, 470, "#e8a4d5"], [672, 510, "#fff0a0"],
+        [110, 31, "#ffbd69"], [616, 28, "#f5a1b5"], [104, 526, "#f5a1b5"]
+      ];
+
+      function stopRivalAudio() {
+        rivalAudio.pause();
+        rivalAudio.currentTime = 0;
+      }
+
+      function playRivalAudio(fedora) {
+        stopRivalAudio();
+        rivalAudio.playbackRate = fedora ? 1.5 : 1;
+        const playback = rivalAudio.play();
+        if (playback) {
+          playback.catch((error) => {
+            console.error("Could not play sprock.m4a.", error);
+            stopRivalAudio();
+          });
+        }
+      }
+
+      function makeObstacles() {
+        stopRivalAudio();
+        obstacles = laneRows.map((row, index) => {
+          const direction = index % 2 === 0 ? 1 : -1;
+          const count = index < 3 ? 3 : 2;
+          const gap = count === 3 ? 245 : 330;
+          return {
+            row,
+            direction,
+            speed: (45 + (index % 3) * 13 + level * 5) * direction,
+            width: index < 3 ? 70 + (index % 2) * 15 : 83 + (index % 2) * 12,
+            items: Array.from({ length: count }, (_, n) => ({
+              x: direction > 0 ? n * gap - 100 - index * 31 : W - n * gap + 70 + index * 24,
+              bob: Math.random() * Math.PI * 2
+            }))
+          };
+        });
+        adversary = null;
+        adversarySpawnTimer = 2200 + Math.random() * 1200;
+      }
+
+      function updateStats() {
+        scoreDisplay.textContent = String(score);
+        livesDisplay.textContent = String(lives);
+        levelDisplay.textContent = String(level);
+      }
+
+      function roundRect(x, y, width, height, radius, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.roundRect(x, y, width, height, radius);
+        ctx.fill();
+      }
+
+      function drawFlower(x, y, color, size = 6) {
+        ctx.fillStyle = color;
+        for (let i = 0; i < 5; i++) {
+          const angle = i * Math.PI * 2 / 5;
+          ctx.beginPath();
+          ctx.arc(x + Math.cos(angle) * size, y + Math.sin(angle) * size, size * .72, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = "#ffcf49";
+        ctx.beginPath();
+        ctx.arc(x, y, size * .72, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawBee(x, y, scale = 1, queen = false, facingX = 1, facingY = 0) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(Math.atan2(facingY, facingX));
+        ctx.scale(scale, scale);
+        ctx.fillStyle = "#ffffffb8";
+        ctx.beginPath();
+        ctx.ellipse(-7, -13, 8, 11, -.55, 0, Math.PI * 2);
+        ctx.ellipse(7, -13, 8, 11, .55, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = queen ? "#db8ab7" : "#f7bd33";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, queen ? 19 : 17, queen ? 15 : 13, 0, 0, Math.PI * 2);
+        ctx.fill();
+        if (!queen) {
+          ctx.strokeStyle = "#54391d";
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(-5, -12); ctx.lineTo(-5, 12);
+          ctx.moveTo(5, -12); ctx.lineTo(5, 12);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "#ffd45c";
+          ctx.beginPath();
+          ctx.moveTo(-10, -12); ctx.lineTo(-7, -23); ctx.lineTo(0, -16);
+          ctx.lineTo(7, -24); ctx.lineTo(10, -12);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "#fff8de";
+          ctx.font = "bold 9px Trebuchet MS, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("QUEEN", 0, 3);
+        }
+        ctx.fillStyle = "#342516";
+        ctx.beginPath();
+        ctx.arc(10, -3, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#342516";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(4, -12); ctx.quadraticCurveTo(4, -20, 8, -20);
+        ctx.moveTo(10, -12); ctx.quadraticCurveTo(13, -19, 16, -18);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawAdversary(x, y, fedora, direction, time) {
+        const bob = Math.sin(time / 100) * 2;
+        ctx.save();
+        ctx.translate(x, y + bob);
+        if (beardBeeSprite.complete && beardBeeSprite.naturalWidth > 0) {
+          ctx.save();
+          ctx.rotate(direction < 0 ? Math.PI : 0);
+          ctx.drawImage(beardBeeSprite, -23, -23, 46, 47);
+          ctx.restore();
+        }
+
+        if (fedora) {
+          ctx.fillStyle = "#fffdf3";
+          ctx.beginPath();
+          ctx.ellipse(0, -16, 15, 3.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(-9, -17);
+          ctx.lineTo(-6, -25);
+          ctx.quadraticCurveTo(0, -29, 6, -25);
+          ctx.lineTo(9, -17);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = "#d9d3c4";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.fillStyle = "#d5a744";
+          ctx.fillRect(-7, -19, 14, 2);
+        }
+
+        ctx.restore();
+      }
+
+      function drawHive(x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.fillStyle = "#c98129";
+        ctx.beginPath();
+        ctx.moveTo(-31, 15);
+        ctx.quadraticCurveTo(-31, -15, 0, -19);
+        ctx.quadraticCurveTo(31, -15, 31, 15);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "#9c5d1b";
+        ctx.lineWidth = 4;
+        for (const yy of [-7, 2, 11]) {
+          ctx.beginPath();
+          ctx.moveTo(-24 + Math.abs(yy), yy);
+          ctx.quadraticCurveTo(0, yy + 7, 24 - Math.abs(yy), yy);
+          ctx.stroke();
+        }
+        ctx.fillStyle = "#50361d";
+        ctx.beginPath();
+        ctx.ellipse(0, 14, 8, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawBackground(time) {
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = "#8fc477";
+        ctx.fillRect(0, 0, W, H);
+
+        for (const [x, y, color] of flowers) drawFlower(x, y, color, 5);
+        ctx.fillStyle = "#ffffff14";
+        for (let x = 20; x < W; x += 38) {
+          for (let y = 20; y < H; y += 38) {
+            ctx.beginPath();
+            ctx.arc(x + (y % 3) * 4, y, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        const bandY = (row) => row * tile;
+        roundRect(0, bandY(0), W, tile, 0, "#aedb85");
+        roundRect(0, bandY(4), W, tile, 0, "#578f61");
+        roundRect(0, bandY(8), W, tile, 0, "#aedb85");
+
+        ctx.fillStyle = "#d6a440";
+        ctx.fillRect(0, bandY(4), W, 4);
+        ctx.fillStyle = "#f4d36a";
+        ctx.fillRect(0, bandY(4) + 4, W, 3);
+        ctx.fillStyle = "#447a56";
+        for (let x = 8; x < W; x += 28) {
+          ctx.beginPath();
+          ctx.ellipse(x, bandY(4) + 18, 12, 4, -.35, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        for (let row of [0, 8]) {
+          for (let col = 0; col < 13; col++) {
+            if ((col + row) % 4 === 1) drawFlower(col * tile + 28, row * tile + 28, "#f7a8a4", 4);
+          }
+        }
+
+        ctx.fillStyle = "#69a9b5";
+        ctx.fillRect(0, bandY(5), W, tile * 3);
+        for (let row = 5; row < 8; row++) {
+          const y = row * tile;
+          for (let x = -30; x < W + 30; x += 102) {
+            const shift = ((time * .025 + row * 21) % 102);
+            ctx.fillStyle = row % 2 === 0 ? "#8ac6c8" : "#79b8c2";
+            ctx.beginPath();
+            ctx.ellipse(x + shift, y + 28 + Math.sin(time / 500 + x) * 2, 35, 5, -.08, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#ffffff50";
+            ctx.beginPath();
+            ctx.ellipse(x + shift - 8, y + 26, 12, 2, -.08, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        ctx.fillStyle = "#fff3c8";
+        ctx.font = "bold 12px Trebuchet MS, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("FLOWER MEADOW", W / 2, 36);
+        ctx.fillText("LILY-PAD POND", W / 2, bandY(7) + 47);
+
+        drawHive(62, 27);
+        drawHive(W - 62, 27);
+        ctx.fillStyle = "#55371d";
+        ctx.font = "bold 11px Trebuchet MS, sans-serif";
+        ctx.fillText("THE QUEEN", W / 2, 15);
+        drawBee(W / 2, 33, 1.12, true);
+
+        roundRect(8, bandY(4) + 8, 128, 22, 10, "#fff8e8dd");
+        ctx.fillStyle = "#665332";
+        ctx.textAlign = "left";
+        ctx.font = "bold 10px Trebuchet MS, sans-serif";
+        ctx.fillText("SAFE FLOWER PATH", 19, bandY(4) + 23);
+      }
+
+      function drawObstacles(time) {
+        for (const lane of obstacles) {
+          const centerY = lane.row * tile + tile / 2;
+          for (const item of lane.items) {
+            const bob = Math.sin(time / 200 + item.bob) * 2;
+            drawBee(item.x, centerY + bob, .9, false, lane.direction, 0);
+            if (lane.row >= 5) {
+              ctx.fillStyle = "#fff4d8";
+              ctx.beginPath();
+              ctx.arc(item.x - 6, centerY - 5 + bob, 2, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              ctx.fillStyle = "#53391f";
+              ctx.beginPath();
+              ctx.arc(item.x + lane.direction * 17, centerY + bob, 3, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+        if (adversary) {
+          drawAdversary(adversary.x, adversary.y, adversary.fedora, adversary.direction, time);
+        }
+      }
+
+      function drawPlayer(time) {
+        const x = player.col * tile + tile / 2;
+        const y = player.row * tile + tile / 2;
+        ctx.save();
+        ctx.globalAlpha = .2;
+        ctx.fillStyle = "#493817";
+        ctx.beginPath();
+        ctx.ellipse(x, y + 17, 15, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        drawBee(x, y + Math.sin(time / 130) * 2, 1.08, false, player.facingX, player.facingY);
+      }
+
+      function render(time = 0) {
+        drawBackground(time);
+        drawObstacles(time);
+        drawPlayer(time);
+      }
+
+      function move(direction) {
+        if (!running) return;
+        const moves = {
+          up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0]
+        };
+        const [dx, dy] = moves[direction];
+        player.facingX = dx;
+        player.facingY = dy;
+        player.col = Math.max(0, Math.min(12, player.col + dx));
+        player.row = Math.max(0, Math.min(9, player.row + dy));
+        if (player.row === 0) {
+          score += 100 * level;
+          level += 1;
+          updateStats();
+          player.col = start.col;
+          player.row = start.row;
+          makeObstacles();
+          showMessage("You reached the queen!", "Your drone made it to the royal hive. The mating flight is a success!", "Next level");
+          running = false;
+        }
+      }
+
+      function loseLife() {
+        lives -= 1;
+        updateStats();
+        player.col = start.col;
+        player.row = start.row;
+        if (lives <= 0) {
+          running = false;
+          adversary = null;
+          stopRivalAudio();
+          showMessage("Bee careful!", "The garden got the better of you this time. Ready for another flight?", "Try again");
+        } else {
+          messageTimer = 700;
+        }
+      }
+
+      function spawnAdversary() {
+        const fromLeft = Math.random() < 0.5;
+        const row = laneRows[Math.floor(Math.random() * laneRows.length)];
+        adversary = {
+          fedora: nextAdversaryIndex === 1,
+          x: fromLeft ? 0 : W,
+          y: row * tile + tile / 2,
+          targetRow: row,
+          direction: fromLeft ? 1 : -1,
+          speed: 82 + level * 5,
+          laneChangeTimer: 700 + Math.random() * 1000
+        };
+        adversary.facingX = fromLeft ? 1 : -1;
+        nextAdversaryIndex = (nextAdversaryIndex + 1) % 2;
+        playRivalAudio(adversary.fedora);
+      }
+
+      function update(time) {
+        const delta = Math.min(32, time - (lastTime || time));
+        lastTime = time;
+        if (running) {
+          if (adversary) {
+            adversary.x += adversary.direction * adversary.speed * delta / 1000;
+            adversary.laneChangeTimer -= delta;
+            if (adversary.laneChangeTimer <= 0) {
+              adversary.targetRow = laneRows[Math.floor(Math.random() * laneRows.length)];
+              adversary.laneChangeTimer = 700 + Math.random() * 1000;
+            }
+            const targetY = adversary.targetRow * tile + tile / 2;
+            const verticalStep = 115 * delta / 1000;
+            adversary.y += Math.sign(targetY - adversary.y) * Math.min(Math.abs(targetY - adversary.y), verticalStep);
+
+            const playerX = player.col * tile + tile / 2;
+            const playerY = player.row * tile + tile / 2;
+            if (Math.hypot(adversary.x - playerX, adversary.y - playerY) < 34) {
+              loseLife();
+            } else if (adversary.x < -24 || adversary.x > W + 24) {
+              stopRivalAudio();
+              adversary = null;
+              adversarySpawnTimer = 2200 + Math.random() * 1800;
+            }
+          } else {
+            adversarySpawnTimer -= delta;
+            if (adversarySpawnTimer <= 0) spawnAdversary();
+          }
+
+          for (const lane of obstacles) {
+            if (!running) break;
+            for (const item of lane.items) {
+              item.x += lane.speed * delta / 1000;
+              if (lane.direction > 0 && item.x > W + lane.width) item.x = -lane.width;
+              if (lane.direction < 0 && item.x < -lane.width) item.x = W + lane.width;
+              if (player.row === lane.row && Math.abs(item.x - (player.col * tile + tile / 2)) < lane.width / 2 + 12) {
+                loseLife();
+                break;
+              }
+            }
+            if (!running) break;
+          }
+          if (messageTimer > 0) messageTimer -= delta;
+        }
+        render(time);
+        animationFrame = requestAnimationFrame(update);
+      }
+
+      function showMessage(title, copy, buttonText) {
+        overlayTitle.textContent = title;
+        overlayCopy.textContent = copy;
+        startButton.textContent = buttonText;
+        overlay.hidden = false;
+      }
+
+      function startGame() {
+        if (lives <= 0) {
+          score = 0;
+          lives = 3;
+          level = 1;
+          updateStats();
+        }
+        player.col = start.col;
+        player.row = start.row;
+        makeObstacles();
+        nextAdversaryIndex = 1;
+        spawnAdversary();
+        running = true;
+        lastTime = 0;
+        overlay.hidden = true;
+        if (!animationFrame) animationFrame = requestAnimationFrame(update);
+      }
+
+      document.addEventListener("keydown", (event) => {
+        const key = event.key.toLowerCase();
+        const directions = {
+          arrowup: "up", w: "up", arrowdown: "down", s: "down",
+          arrowleft: "left", a: "left", arrowright: "right", d: "right"
+        };
+        if (directions[key]) {
+          event.preventDefault();
+          move(directions[key]);
+        } else if ((key === " " || key === "enter") && !running) {
+          event.preventDefault();
+          startGame();
+        }
+      });
+
+      document.querySelectorAll("[data-move]").forEach((button) => {
+        button.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          move(button.dataset.move);
+        });
+      });
+
+      startButton.addEventListener("click", startGame);
+      makeObstacles();
+      updateStats();
+      render();
+      animationFrame = requestAnimationFrame(update);
+    })();
+  </script>
+</body>
+</html>
